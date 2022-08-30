@@ -1,4 +1,4 @@
-package org.apache.eventmesh.trace.zipkin;
+package org.apache.eventmesh.trace.skywalking;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
@@ -36,7 +36,8 @@ public class SkywalkingTraceService implements EventMeshTraceService {
 
     @Override
     public void init() throws TraceException {
-        OtlpGrpcSpanExporter otlpGrpcSpanExporter = OtlpGrpcSpanExporter.builder().setEndpoint("http://159.75.50.238:12800").build();
+        OtlpGrpcSpanExporter otlpGrpcSpanExporter =
+                OtlpGrpcSpanExporter.builder().setEndpoint("http://159.75.50.238:11800").build();
 
         int eventMeshTraceExportInterval = ExporterConfiguration.getEventMeshTraceExportInterval();
         int eventMeshTraceExportTimeout = ExporterConfiguration.getEventMeshTraceExportTimeout();
