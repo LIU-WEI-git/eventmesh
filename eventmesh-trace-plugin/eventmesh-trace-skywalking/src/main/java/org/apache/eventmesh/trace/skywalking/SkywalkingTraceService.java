@@ -17,12 +17,15 @@ import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+
 import org.apache.eventmesh.trace.api.EventMeshTraceService;
 import org.apache.eventmesh.trace.api.config.ExporterConfiguration;
 import org.apache.eventmesh.trace.api.exception.TraceException;
 
 import javax.annotation.Nullable;
+
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
@@ -37,7 +40,7 @@ public class SkywalkingTraceService implements EventMeshTraceService {
     @Override
     public void init() throws TraceException {
         OtlpGrpcSpanExporter otlpGrpcSpanExporter =
-                OtlpGrpcSpanExporter.builder().setEndpoint("http://159.75.50.238:11800").build();
+            OtlpGrpcSpanExporter.builder().setEndpoint("http://159.75.50.238:11800").build();
 
         int eventMeshTraceExportInterval = ExporterConfiguration.getEventMeshTraceExportInterval();
         int eventMeshTraceExportTimeout = ExporterConfiguration.getEventMeshTraceExportTimeout();
@@ -45,22 +48,22 @@ public class SkywalkingTraceService implements EventMeshTraceService {
         int eventMeshTraceMaxQueueSize = ExporterConfiguration.getEventMeshTraceMaxQueueSize();
 
         SpanProcessor spanProcessor = BatchSpanProcessor.builder(otlpGrpcSpanExporter)
-                .setScheduleDelay(eventMeshTraceExportInterval, TimeUnit.SECONDS)
-                .setExporterTimeout(eventMeshTraceExportTimeout, TimeUnit.SECONDS)
-                .setMaxExportBatchSize(eventMeshTraceMaxExportSize)
-                .setMaxQueueSize(eventMeshTraceMaxQueueSize)
-                .build();
+            .setScheduleDelay(eventMeshTraceExportInterval, TimeUnit.SECONDS)
+            .setExporterTimeout(eventMeshTraceExportTimeout, TimeUnit.SECONDS)
+            .setMaxExportBatchSize(eventMeshTraceMaxExportSize)
+            .setMaxQueueSize(eventMeshTraceMaxQueueSize)
+            .build();
         Resource serviceNameResource =
-                Resource.create(Attributes.of(stringKey("service.name"), "eventmesh-trace"));
+            Resource.create(Attributes.of(stringKey("service.name"), "eventmesh-trace"));
 
         sdkTracerProvider = SdkTracerProvider.builder()
-                .addSpanProcessor(spanProcessor)
-                .setResource(Resource.getDefault().merge(serviceNameResource))
-                .build();
+            .addSpanProcessor(spanProcessor)
+            .setResource(Resource.getDefault().merge(serviceNameResource))
+            .build();
         openTelemetry = OpenTelemetrySdk.builder()
-                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
-                .setTracerProvider(sdkTracerProvider)
-                .build();
+            .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+            .setTracerProvider(sdkTracerProvider)
+            .build();
         tracer = openTelemetry.getTracer("eventmesh-trace");
         textMapPropagator = openTelemetry.getPropagators().getTextMapPropagator();
 
@@ -78,7 +81,7 @@ public class SkywalkingTraceService implements EventMeshTraceService {
 
             @Override
             public String get(Map<String, Object> carrier, String key) {
-                return carrier.get(key).toString();
+                return Optional.ofNullable(carrier.get(key)).map(Object::toString).orElse(null);
             }
         });
         return context;
@@ -95,21 +98,22 @@ public class SkywalkingTraceService implements EventMeshTraceService {
     }
 
     @Override
-    public Span createSpan(String spanName, SpanKind spanKind, long startTimestamp, TimeUnit timeUnit, Context context, boolean isSpanFinishInOtherThread) throws TraceException {
+    public Span createSpan(String spanName, SpanKind spanKind, long startTimestamp, TimeUnit timeUnit, Context context,
+                           boolean isSpanFinishInOtherThread) throws TraceException {
         return tracer.spanBuilder(spanName)
-                .setParent(context)
-                .setSpanKind(spanKind)
-                .setStartTimestamp(startTimestamp, timeUnit)
-                .startSpan();
+            .setParent(context)
+            .setSpanKind(spanKind)
+            .setStartTimestamp(startTimestamp, timeUnit)
+            .startSpan();
     }
 
     @Override
     public Span createSpan(String spanName, SpanKind spanKind, Context context, boolean isSpanFinishInOtherThread) throws TraceException {
         return tracer.spanBuilder(spanName)
-                .setParent(context)
-                .setSpanKind(spanKind)
-                .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                .startSpan();
+            .setParent(context)
+            .setSpanKind(spanKind)
+            .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+            .startSpan();
     }
 
     @Override
